@@ -32,6 +32,15 @@ def race_details(round):
 
     return render_template('race.html', race=race_details)
 
+@app.route('/drivers')
+def drivers_standings():
+    url = 'http://ergast.com/api/f1/2024/driverStandings.json'
+    response = requests.get(url)
+    data = response.json()
+    drivers = data['MRData']['StandingsTable']['StandingsLists'][0]['DriverStandings']
+
+    return render_template('drivers.html', drivers=drivers)
+
 
 if __name__ == '__main__':
     app.run(debug=True)
