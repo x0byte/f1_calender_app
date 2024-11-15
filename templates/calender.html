@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calender 2024</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+</head>
+<body>
+    <div class="container mt-5">
+        <h1 class="text-center">F1 2024 Race Calender</h1>
+        <table class="table table-striped table-borderless mt-4">
+
+            <thead class="table-dark">
+                <tr>
+                    <th>Round</th>
+                    <th>Race Name</th>
+                    <th>Date</th>
+                    <th>Circuit</th>
+                    <th>Location</th>
+                    <th>Finished</th>
+                </tr>
+            </thead>
+
+            <tbody>
+                {% set today = date.today() %}
+                {% for race in races %}
+                    <tr>
+                        {% set race_date = datetime.strptime(race.date, "%Y-%m-%d").date() %}
+                        {% set difference = today - race_date %}
+                        {% set is_finished = "✅" if difference.days > 0 else "🟥" %}
+
+                        <td>{{ race.round }}</td>
+                        <td><a href="/race/{{ race.round }}">{{ race.raceName }} </a></td>
+                        <td>{{ race.date }}</td>
+                        <td>{{ race.Circuit.circuitName }}</td>
+                        <td>{{ race.Circuit.Location.locality }}, {{ race.Circuit.Location.country }}</td>
+                        <td>{{ is_finished }}</td>
+                    </tr>
+                {% endfor %}
+
+
+            </tbody>
+
+        </table>
+
+    </div>
+    
+</body>
+</html>
