@@ -18,5 +18,20 @@ def calender():
     return render_template('calender.html', races=races, date=date, datetime=datetime)
 
 
+@app.route('/race/<round>')
+def race_details(round):
+    url = 'http://ergast.com/api/f1/2024.json'
+    response = requests.get(url)
+    data = response.json()
+    races = data['MRData']['RaceTable']['Races']
+
+    race_details = next((race for race in races if race['round'] == round), None)
+
+    if not race_details:
+        return "Race not found", 404
+
+    return render_template('race.html', race=race_details)
+
+
 if __name__ == '__main__':
     app.run(debug=True)
