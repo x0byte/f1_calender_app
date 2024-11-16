@@ -6,6 +6,8 @@
     <title>Calender 2024</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link rel="stylesheet" href="">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
 
     <style>
         .center-btn {
@@ -20,6 +22,14 @@
         <h1 class="text-center">F1 2024 Race Calender</h1>
         <div class="d-flex justify-content-center mt-3">
             <a href="/" class="btn btn-dark" style="width: auto;">Home</a>
+        </div>
+        <div class="alert alert-success alert-dismissible mt-3" role="alert">
+            <h4 class="alert-heading">Next Race: {{ next_race.raceName }}</h4>
+            <p>Date: {{ next_race.date }}</p>
+            <p>Circuit: {{ next_race.Circuit.circuitName }}</p>
+            <p>Sri Lankan Time: {{ local_time }}</p>
+            <hr>
+            <a href={{ next_race.url }}>Click here for more information about the race</a>
         </div>
         <table class="table table-striped table-borderless mt-4">
 
@@ -56,6 +66,11 @@
 
         </table>
 
+    </div>
+
+    <h2 class="text-center mt-5">Track Locations</h2>
+    <div class="mt-5" style="height: 60%; width: 1300px; margin: auto;">
+        {{ map_html|safe }}
     </div>
     
 </body>
