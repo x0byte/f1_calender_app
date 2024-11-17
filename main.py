@@ -219,6 +219,10 @@ def drivers_standings():
 
     return render_template('drivers.html', drivers=drivers, team_style=team_style, leader=leader_data, graph_html=graph_html)
 
+@app.route('/constructors')
+def constructor_standings():
+
+    pass
 
 
 
