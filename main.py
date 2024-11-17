@@ -79,76 +79,82 @@ def calender():
     return render_template('calender.html', races=races, date=date, datetime=datetime, next_race=next_race, local_time=local_time.time(), map_html=map_html)
 
 
-# def get_driver_points_progress():
-#     # Fetch driver standings to identify the top 5 drivers
-#     standings_url = 'http://ergast.com/api/f1/2024/driverStandings.json'
-#     standings_response = requests.get(standings_url)
-#     standings = standings_response.json()['MRData']['StandingsTable']['StandingsLists'][0]['DriverStandings']
-#     top5_drivers = [driver['Driver']['driverId'] for driver in standings[:5]]
+def get_driver_points_progress():
+    # Fetch driver standings to identify the top 5 drivers
+    standings_url = 'http://ergast.com/api/f1/2024/driverStandings.json'
+    standings_response = requests.get(standings_url)
+    standings = standings_response.json()['MRData']['StandingsTable']['StandingsLists'][0]['DriverStandings']
+    top5_drivers = [driver['Driver']['driverId'] for driver in standings[:5]]
 
-#     if not standings_response.json()['MRData']['StandingsTable']['StandingsLists']:
-#         return "No standings data available", 404
-#     standings = standings_response.json()['MRData']['StandingsTable']['StandingsLists'][0]['DriverStandings']
-
-
-#     # Initialize a DataFrame to track cumulative points
-#     data = {driver: [] for driver in top5_drivers}
-#     race_names = []
-
-#     season_url = 'http://ergast.com/api/f1/current.json'
-#     season_response = requests.get(season_url)
-#     season = season_response.json()['MRData']['RaceTable']['Races']
-
-#     if not season_response.json()['MRData']['RaceTable']['Races']:
-#         return "No season data available", 404
-#     season = season_response.json()['MRData']['RaceTable']['Races']
+    if not standings_response.json()['MRData']['StandingsTable']['StandingsLists']:
+        return "No standings data available", 404
+    standings = standings_response.json()['MRData']['StandingsTable']['StandingsLists'][0]['DriverStandings']
 
 
-#     for race in season:
-#         race_name = race['raceName']
-#         race_round = race['round']
-#         race_names.append(race_name)
+    # Initialize a DataFrame to track cumulative points
+    data = {driver: [] for driver in top5_drivers}
+    race_names = []
 
-#         # Fetch results for this race
-#         race_url = f'http://ergast.com/api/f1/current/{race_round}/results.json'
-#         race_results_response = requests.get(race_url)
-#         race_results = race_results_response.json()
-#         race_results = race_results['MRData']['RaceTable']['Races'][0]['Results']
+    season_url = 'http://ergast.com/api/f1/current.json'
+    season_response = requests.get(season_url)
+    season = season_response.json()['MRData']['RaceTable']['Races']
 
-#         if not race_results:
-#             return "No race result data available"
+    if not season_response.json()['MRData']['RaceTable']['Races']:
+        return "No season data available", 404
+    season = season_response.json()['MRData']['RaceTable']['Races']
 
-#         race_points = {driver: 0 for driver in top5_drivers}
-#         #{max_verstappen : 0}
 
-#         for result in race_results:
-#             driver_id = result['Driver']['driverId']
-#             points = float(result['points'])
 
-#             if driver_id in race_points:
-#                 race_points[driver_id] += points
+    for race in season:
+        race_name = race['raceName']
+        race_round = race['round']
+        race_names.append(race_name)
 
-#         for driver in top5_drivers:
-#             previous_points = data[driver][-1] if data[driver] else 0
-#             data[driver].append(previous_points + race_points[driver])
+        # Fetch results for this race
+        race_url = f'http://ergast.com/api/f1/current/{race_round}/results.json'
+        race_results_response = requests.get(race_url)
+        race_results = race_results_response.json()
+        race_results = race_results['MRData']['RaceTable']['Races']
 
-#     return race_names, data
+        if race_results:  # Check if the 'race results' list is not empty
+            race_results = race_results[0].get('Results')  # Use get() to avoid KeyError
+            if not race_results:  # Check if 'Results' exists
+                print(f"No results available for race: {race_name}")
+        else:
+            print(f"No race data available for round {race_round}")
 
-# def plot_driver_points_progress_interactive():
-#     race_names, points_data = get_driver_points_progress()
+        race_points = {driver: 0 for driver in top5_drivers}
+        #{max_verstappen : 0}
 
-#     fig = go.Figure()
-#     for driver, points in points_data.items():
-#         fig.add_trace(go.Scatter(x=race_names, y=points, mode='lines+markers', name=driver))
+        for result in race_results:
+            driver_id = result['Driver']['driverId']
+            points = float(result['points'])
 
-#     fig.update_layout(
-#         title='Top 5 Drivers - Points Progress',
-#         xaxis_title='Races',
-#         yaxis_title='Cumulative Points',
-#         template='plotly_dark',
-#         hovermode='x unified'
-#     )
-#     return fig.to_html(full_html=False)
+            if driver_id in race_points:
+                race_points[driver_id] += points
+
+        for driver in top5_drivers:
+            previous_points = data[driver][-1] if data[driver] else 0
+            data[driver].append(previous_points + race_points[driver])
+
+
+    return race_names, data
+
+def plot_driver_points_progress_interactive():
+    race_names, points_data = get_driver_points_progress()
+
+    fig = go.Figure()
+    for driver, points in points_data.items():
+        fig.add_trace(go.Scatter(x=race_names, y=points, mode='lines+markers', name=driver))
+
+    fig.update_layout(
+        title='Top 5 Drivers - Points Progress',
+        xaxis_title='Races',
+        yaxis_title='Cumulative Points',
+        template='plotly_dark',
+        hovermode='x unified'
+    )
+    return fig.to_html(full_html=False)
 
 
 
@@ -174,28 +180,28 @@ def drivers_standings():
     data = response.json()
     drivers = data['MRData']['StandingsTable']['StandingsLists'][0]['DriverStandings']
 
-    #graph_html = plot_driver_points_progress_interactive()
+    graph_html = plot_driver_points_progress_interactive()
 
     TEAM_STYLES = {
         "red_bull": {
-            "background": "linear-gradient(to bottom, #00174C, #FF004C)",
+            "background": "linear-gradient(135deg, #001f3f, #00275c 50%, #ff1801);",
             "text_color": "#FFCC00",
             "secondary_color": "#FF004C"
         },
         "mercedes": {
-            "background_color": "#00D2BE",
-            "text_color": "#000000",
+            "background": "linear-gradient(135deg, #000000, #101820 50%, #00d2be);",
+            "text_color": "#FFFFFF",
             "secondary_color": "#FFFFFF"
         },
         "ferrari": {
-            "background_color": "#DC0000",  # Ferrari's signature red
-            "text_color": "#FFFFFF",       # White text for contrast
-            "secondary_color": "#FFFF00"   # Yellow for the horse logo
+            "background": "linear-gradient(135deg, #ff2800, #ff6b00 70%, #ffce00);",  
+            "text_color": "#FFFFFF",
+            "secondary_color": "#FFFF00"
         },
         "mclaren": {
-            "background_color": "#FF8700",  # Papaya orange
-            "text_color": "#000000",        # Black text for contrast
-            "secondary_color": "#FFFFFF"   # White as an accent
+            "background": "linear-gradient(135deg, #ff8700, #ffae00 50%, #005aff);", 
+            "text_color": "#000000",        
+            "secondary_color": "#FFFFFF" 
         }
     }
 
@@ -211,7 +217,7 @@ def drivers_standings():
 
     team_style = TEAM_STYLES.get(leader_data['team_id'], {})
 
-    return render_template('drivers.html', drivers=drivers, team_style=team_style, leader=leader_data)
+    return render_template('drivers.html', drivers=drivers, team_style=team_style, leader=leader_data, graph_html=graph_html)
 
 
 

@@ -1,12 +1,9 @@
 .card {
-    width: 300px;
     border-radius: 15px;
     padding: 20px;
     box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
-    display: flex;
-    flex-direction: column;
-    align-items: center;
     transition: transform 0.3s;
+    height: 100%; /* Ensures full height alignment with other cards */
 }
 
 .card:hover {
@@ -14,13 +11,45 @@
 }
 
 .driver-image {
-    width: 100px;
-    height: 100px;
-    border-radius: 50%;
-    margin-bottom: 15px;
+    display: block;
+    margin: 10px auto;
+    border-radius: 50%; /* Circular image */
+    width: 100px; /* Smaller image size */
+    height: 100px; /* Match width */
 }
 
 .card-content h2 {
-    font-size: 1.5em;
-    margin-bottom: 10px;
+    font-size: 1.2em; /* Slightly smaller font */
+    margin-bottom: 5px;
 }
+
+.card-title {
+    font-weight: bold;
+    color: #333;
+}
+
+.container {
+    max-width: 1200px; /* Keep content centered */
+}
+
+.row {
+    align-items: stretch; /* Align both cards vertically */
+}
+
+@media (max-width: 768px) {
+    .card {
+        margin-bottom: 20px; /* Add spacing when stacked vertically */
+    }
+}
+
+/* Specific card sizes for large screens */
+@media (min-width: 992px) {
+    .championship-card {
+        width: 25%; /* Championship Leader Card */
+    }
+
+    .graph-card {
+        width: 75%; /* Graph Card */
+    }
+}
+

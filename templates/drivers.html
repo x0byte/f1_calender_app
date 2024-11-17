@@ -14,13 +14,28 @@
             <a href="/" class="btn btn-dark" style="width: auto;">Home</a>
         </div>
 
-        <div class="card mt-5" style="background: {{ team_style.background }}; color: {{ team_style.text_color }};">
-            <p>Current Championship Leader</p>
-            <img src="{{ leader.image }}" alt="{{ leader.name }}" class="driver-image">
-            <div class="card-content">
-                <h2>{{ leader.name }}</h2>
-                <p>{{ leader.team }}</p>
-                <p>Points: {{ leader.points }}</p>
+        <div class="row mt-5">
+            <!-- Championship Leader Card -->
+            <div class="col-lg-3 col-md-4 col-sm-12 championship-card">
+                <div class="card" style="background: {{ team_style.background }}; color: {{ team_style.text_color }};">
+                    <p class="text-center">Current Championship Leader</p>
+                    <img src="{{ leader.image }}" alt="{{ leader.name }}" class="driver-image mx-auto d-block">
+                    <div class="card-content text-center">
+                        <h2>{{ leader.name }}</h2>
+                        <p>{{ leader.team }}</p>
+                        <p>Points: {{ leader.points }}</p>
+                    </div>
+                </div>
+            </div>
+        
+            <!-- Cumulative Points Graph -->
+            <div class="col-lg-9 col-md-8 col-sm-12 graph-card">
+                <div class="card h-100">
+                    <h5 class="card-title text-center mt-3">Cumulative Points - Top 5 Drivers</h5>
+                    <div class="p-3">
+                        {{ graph_html|safe }}
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -50,9 +65,5 @@
             </tbody>
         </table>
     </div>
-
-    <!-- <div>
-        {{ graph_html|safe }}
-    </div> -->
 </body>
 </html>
