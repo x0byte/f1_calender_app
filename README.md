@@ -82,17 +82,12 @@ These graphs are fully interactive, allowing users to hover over the lines to se
 
 ## How it looks in action
 
-The Home Page
 <img src="static/assets/screenshots/1.png" alt="Home Page" width="500"/>
 
-The Race Calander
 <img src="static/assets/screenshots/2.png" alt="Calander" width="500"/>
 
-World Map showing the race circuits
 <img src="static/assets/screenshots/3.png" alt="Map" width="500"/>
 
-Driver Statistics
 <img src="static/assets/screenshots/4.png" alt="Driver" width="500"/>
 
-Constructor Statistics
 <img src="static/assets/screenshots/5.png" alt="Constructor" width="500"/>
