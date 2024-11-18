@@ -1,20 +1,27 @@
-from flask import Flask, render_template
+from flask import Flask, render_template 
 import requests
 from datetime import date, datetime, timedelta
 import folium
 from folium.plugins import AntPath
 import plotly.graph_objects as go
+from flask_caching import Cache
 
 app = Flask(__name__)
 
+# Configure caching
+app.config['CACHE_TYPE'] = 'SimpleCache'
+app.cache = Cache(app)
+
+
 @app.route('/')
+@app.cache.cached(timeout=3600)  # Cache the route for 1 hour
 
 def home():
     return render_template('index.html')
 
 @app.route('/calender')
 def calender():
-    url = 'http://ergast.com/api/f1/2024.json'
+    url = 'http://ergast.com/api/f1/current.json'
     response = requests.get(url)
     data = response.json()
     races = data['MRData']['RaceTable']['Races']
@@ -81,7 +88,7 @@ def calender():
 
 def get_driver_points_progress():
     # Fetch driver standings to identify the top 5 drivers
-    standings_url = 'http://ergast.com/api/f1/2024/driverStandings.json'
+    standings_url = 'http://ergast.com/api/f1/current/driverStandings.json'
     standings_response = requests.get(standings_url)
     standings = standings_response.json()['MRData']['StandingsTable']['StandingsLists'][0]['DriverStandings']
     top5_drivers = [driver['Driver']['driverId'] for driver in standings[:5]]
@@ -160,7 +167,7 @@ def plot_driver_points_progress_interactive():
 
 @app.route('/race/<round>')
 def race_details(round):
-    url = 'http://ergast.com/api/f1/2024.json'
+    url = 'http://ergast.com/api/f1/current.json'
     response = requests.get(url)
     data = response.json()
     races = data['MRData']['RaceTable']['Races']
@@ -174,8 +181,10 @@ def race_details(round):
 
 
 @app.route('/drivers')
+@app.cache.cached(timeout=3600)  # Cache the route for 1 hour
+
 def drivers_standings():
-    url = 'http://ergast.com/api/f1/2024/driverStandings.json'
+    url = 'http://ergast.com/api/f1/current/driverStandings.json'
     response = requests.get(url)
     data = response.json()
     drivers = data['MRData']['StandingsTable']['StandingsLists'][0]['DriverStandings']
@@ -219,10 +228,129 @@ def drivers_standings():
 
     return render_template('drivers.html', drivers=drivers, team_style=team_style, leader=leader_data, graph_html=graph_html)
 
+
+def get_constructor_points_progress():
+    # Fetch constructor standings to identify the top 5 constructors
+    standings_url = 'http://ergast.com/api/f1/current/constructorStandings.json'
+    standings_response = requests.get(standings_url)
+    standings_data = standings_response.json()
+
+    if not standings_data['MRData']['StandingsTable']['StandingsLists']:
+        return "No standings data available", 404
+
+    standings = standings_data['MRData']['StandingsTable']['StandingsLists'][0]['ConstructorStandings']
+    top5_constructors = [constructor['Constructor']['constructorId'] for constructor in standings[:5]]
+
+    # Initialize a DataFrame-like structure to track cumulative points
+    data = {constructor: [] for constructor in top5_constructors}
+    race_names = []
+
+    # Fetch the list of races for the current season
+    season_url = 'http://ergast.com/api/f1/current.json'
+    season_response = requests.get(season_url)
+    season_data = season_response.json()
+
+    if not season_data['MRData']['RaceTable']['Races']:
+        return "No season data available", 404
+
+    races = season_data['MRData']['RaceTable']['Races']
+
+    for race in races:
+        race_name = race['raceName']
+        race_round = race['round']
+        race_names.append(race_name)
+
+        # Fetch results for this race
+        race_url = f'http://ergast.com/api/f1/current/{race_round}/results.json'
+        race_results_response = requests.get(race_url)
+        race_results_data = race_results_response.json()
+
+        if not race_results_data['MRData']['RaceTable']['Races']:
+            print(f"No race data available for round {race_round}")
+            continue
+
+        race_results = race_results_data['MRData']['RaceTable']['Races'][0].get('Results', [])
+        race_points = {constructor: 0 for constructor in top5_constructors}
+
+        for result in race_results:
+            constructor_id = result['Constructor']['constructorId']
+            points = float(result['points'])
+
+            if constructor_id in race_points:
+                race_points[constructor_id] += points
+
+        # Update cumulative points for each constructor
+        for constructor in top5_constructors:
+            previous_points = data[constructor][-1] if data[constructor] else 0
+            data[constructor].append(previous_points + race_points[constructor])
+
+    return race_names, data
+
+def plot_constructor_points_progress_interactive():
+    race_names, points_data = get_constructor_points_progress()
+
+    fig = go.Figure()
+    for constructor, points in points_data.items():
+        fig.add_trace(go.Scatter(x=race_names, y=points, mode='lines+markers', name=constructor))
+
+    fig.update_layout(
+        title='Top 5 Constructors - Points Progress',
+        xaxis_title='Races',
+        yaxis_title='Cumulative Points',
+        template='plotly_dark',
+        hovermode='x unified'
+    )
+    return fig.to_html(full_html=False)
+
+
 @app.route('/constructors')
+@app.cache.cached(timeout=3600)  # Cache the route for 1 hour
+
 def constructor_standings():
 
-    pass
+    url = 'http://ergast.com/api/f1/current/constructorStandings.json'
+    response = requests.get(url)
+    data = response.json()
+    constructors = data['MRData']['StandingsTable']['StandingsLists'][0]['ConstructorStandings']
+
+    graph_html = plot_constructor_points_progress_interactive()
+
+    TEAM_STYLES = {
+        "red_bull": {
+            "background": "linear-gradient(135deg, #001f3f, #00275c 50%, #ff1801);",
+            "text_color": "#FFCC00",
+            "secondary_color": "#FF004C"
+        },
+        "mercedes": {
+            "background": "linear-gradient(135deg, #000000, #101820 50%, #00d2be);",
+            "text_color": "#FFFFFF",
+            "secondary_color": "#FFFFFF"
+        },
+        "ferrari": {
+            "background": "linear-gradient(135deg, #ff2800, #ff6b00 70%, #ffce00);",  
+            "text_color": "#FFFFFF",
+            "secondary_color": "#FFFF00"
+        },
+        "mclaren": {
+            "background": "linear-gradient(135deg, #ff8700, #ffae00 50%, #005aff);", 
+            "text_color": "#000000",        
+            "secondary_color": "#FFFFFF" 
+        }
+    }
+
+    leader = constructors[0]
+    leader_data = {
+        "name": f"{leader['Constructor']['name']}",
+        "points": leader['points'],
+        "wins": leader['wins'],
+        "nationality" : leader['Constructor']['nationality'],
+        "team_id": leader['Constructor']['constructorId'],
+        "image": f"static/assets/teams/{leader['Constructor']['constructorId']}.png",
+    }
+
+    team_style = TEAM_STYLES.get(leader_data['team_id'], {})
+
+    return render_template('constructors.html', constructors=constructors, team_style=team_style, leader=leader_data, graph_html=graph_html)
 
 
 
